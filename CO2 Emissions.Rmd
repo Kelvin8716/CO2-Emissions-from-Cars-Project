@@ -1,0 +1,215 @@
+---
+title: "CO2 Emissions"
+author: "Kelvin Ma"
+date: "2024-05-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(car)
+library(dplyr)
+library(ggplot2)
+library(corrplot)
+library(gridExtra)
+```
+
+![BMWM3](bmwm3.jpg)
+
+**Overview**
+
+This project aims to understand how different types of cars affect CO2 emissions. Since my youth, I've always loved fast cars. Every time I commuted to school or work, I would get a small sense of excitement when I saw a sports car on the road.
+
+Having lived in New York City for my entire life, I've always wondered how the large number of automobiles on the road have impacted the communities around us. On any given day, the I-278 interstate is flooded with thousands of cars, leading to significant traffic. In America, driving cars is a way of life; even in New York City, where public transportation is far superior to that in other states, cars are remain a dominant force.
+
+I want to explore how various vehicle characteristics play a role in CO2 emissions. Living in New York City also means that there is a larger group of individuals who drive hybrid and electric automobiles. With the world rapidly shifting away from internal combustion engine (ICE) vehicles, I'm curious about how the shift towards hybrid and electric cars will create a greener future.
+
+This dataset was taken from the 2023 EPA Automotive Trends Report online.
+
+**Initial Hypothesis**
+
+In America, there's a trend of purchasing larger cars for comfort, perceived notion of safety, utility and more. People believe that larger cars are more beneficial than smaller ones. I think that larger vehicles types such as trucks and minivans will contribute most to CO2 emissions given their size, and the amount of energy needed to move them around. When you combine this simple factor with the statistic that Americans routinely drive an average of 14,000 miles a year, I'm certain that CO2 emissions are largely impacted as a result of these vehicles. Because cars are larger, they will also contribute to the rise of CO2 emissions.
+
+**Data Description**
+
+This dataset contains 735 observations accross 52 variables and some of the ones we will be working on include:
+
+1. Model Year: Year the vehicle model was produced (quantitative)
+2. Vehicle Type: Vehicle Type (qualitative)
+3. Drive Type: Vehicle drivetrain (qualitative)
+4. MPG: Miles per Gallon (quantitative)
+5. Weight: Vehicle weight in lbs (quantitative)
+6. Horsepower: Vehicle horsepower in HP (quantitative)
+7. Acceleration: Acceleration time from 0-60 mph (quantitative)
+8. Powertrain: Component that delivers power to vehicle (qualitative)
+9. Cylinders: Engine power unit (quantitative)
+10. CO2: Carbon Dioxide emissions (g/mi) - response variable
+
+```{r}
+data <- read.csv("CarData.csv")
+n = nrow(data)
+head(data, 3)
+names(data)
+```
+
+```{r}
+names(data)[names(data) == "Weight..lbs."] <- "Weight"
+names(data)[names(data) == "Horsepower..HP."] <- "Horsepower"
+names(data)[names(data) == "Acceleration..0.60.time.in.seconds."] <- "Acceleration"
+names(data)[names(data) == "Real.World.CO2..g.mi."] <- "CO2"
+data$Model.Year <- as.numeric(data$Model.Year)
+data$Acceleration <- as.numeric(as.character(data$Acceleration))
+#data$Acceleration[data$Acceleration == "-"] <- "0"
+```
+
+
+**Exploratory Data Analysis**
+
+My goal in this section is to create a few visualizations so we can see how certain variables measure up to the CO2 response variable.
+
+```{r}
+ggplot(data, aes(x = Vehicle.Type, y = CO2)) + geom_boxplot() + labs(title = "Vehicle Type vs CO2 Emissions", 
+       x = "Vehicle Type",  y = "CO2 Emissions") + theme_minimal()
+```
+
+After plotting this initial boxplot graph, I can see that pickup trucks, trucks/SUVs and vans emit the most CO2 as I initially predicted. On the road, trucks like the Ford F-150 are large in size and thus have big engines. A quick Google search shows that the average Ford F-150 gets approximately 20 MPG on the highway whereas a sedan such as the Toyota Camry can get near 40 MPG. Smaller cars like sedans contribute less to CO2 emissions, but I'm not 100% sure why yet aside from their size.
+
+Another thing I want to point out is that there seems to be a large number of outliers in the vehicle types. It’s possible that car manufacturers for these types of cars have models that emit way more or way less CO2 emissions than the norm.
+
+```{r}
+g1 <- ggplot(data, aes(x = Model.Year, y = CO2)) + geom_point(color = "lightgreen") + labs(title = "Model.Year vs CO2 Emissions", x = "Model Year", y = "CO2 Emissions") + theme_minimal()
+
+g2 <- ggplot(data, aes(x = Real.World.MPG, y = CO2)) + geom_point(color = "lightblue") + labs(title = "MPG vs CO2 Emissions", x = "MPG", y = "CO2 Emissions") + theme_minimal()
+
+g3 <- ggplot(data, aes(x = Weight, y = CO2)) + geom_point(color = "orange") + labs(title = "Weight vs CO2 Emissions", x = "Weight", y = "CO2 Emissions") + theme_minimal()
+
+g4 <- ggplot(data, aes(x = Horsepower, y = CO2)) + geom_point(color = "lightpink") + labs(title = "Horsepower vs CO2 Emissions", x = "Horsepower", y = "CO2 Emissions") + theme_minimal()
+
+g5 <- ggplot(data, aes(x = Acceleration, y = CO2)) + geom_point(color = "brown") + labs(title = "Acceleration vs CO2 Emissions", x = "Acceleration", y = "CO2 Emissions") + theme_minimal()
+
+g6 <- ggplot(data, aes(x = Cylinders, y = CO2)) + geom_point(color = "rosybrown1") + labs(title = "Cylinders vs CO2 Emissions", x = "Cylinders", y = "CO2 Emissions") + theme_minimal()
+
+g7 <- ggplot(data, aes(x = Vehicle.Type, y = CO2)) + geom_point(color = "lightgoldenrod1") + labs(title = "Vehicle Type vs CO2 Emissions", x = "Vehicle Type", y = "CO2 Emissions") + theme_minimal()
+
+grid.arrange(g1, g2, g3, g4, g5, g6, g7, ncol = 4)
+```
+
+```{r}
+ggplot(data, aes(y = Real.World.MPG, x = 1)) + geom_boxplot(fill = "lightblue", color = "black") + labs(title = "Box Plot of MPG", x = "", y = "Miles per Gallon")
+```
+
+I wanted to create scatter plots against each quantitative variable to see what insights I could draw from these variables.
+
+Model Year: Throughout the past few decades, it looks like CO2 emissions has been on a decline. This makes sense since technological improvements have improved leading to reduced CO2 emissions. Likewise, the EPA has also been enforcing strict regulars on air pollution standards and that has also contributed to the decline in recent years.
+
+MPG: Cars with better gas mileage tend to emit lower CO2 emissions.
+
+Weight: As cars get heavier, the more CO2 they emit as I predicted in my hypothesis.
+
+Horsepower: This one is a bit of a mixed bag, will probably need to do more research on this variable. I see a large influx of CO2 emissions in the 100 - 200 horsepower range. This makes sense because a lot of commuter automobiles sit within that power range and thus contribute more to CO2.
+
+Acceleration: This one is also a bit mixed, and will need more testing before we can draw a conclusion.
+
+**Correlation Analysis**
+
+Correlation analysis is an important tool to measure and interpret the strength of the relationship between two variables. I want to create a correlation analysis to identify how changes in one variable might influence another. In the context of this cars dataset, this is important because it allows us to understand which part of a car contribute most to CO2 emissions. By educating consumers about the impact of vehicle characteristics, this can help guide them on influencing their purchasing decisions.
+
+```{r}
+correlations <- sapply(data[, c('Model.Year', 'Real.World.MPG', 'Weight', 'Horsepower', 'Acceleration')], function(x) cor(x, data$CO2))
+names(correlations) <- c('Model.Year', 'Real.World.MPG', 'Weight', 'Horsepower', 'Acceleration')
+print(correlations)
+```
+
+As part of this output, I see that there are negative correlations for the Model Year, MPG and Horsepower variables. These items suggest that newer cars tend to emit less CO2 and cars with higher efficiencies produce less CO2. Our acceleration variable shows an N/A, which occurred because there was missing data points.
+
+**Model Fitting**
+
+In the next part of my project, I want to build a linear regression model to explain the relationship between certain variables and the response variable, CO2.
+
+```{r}
+model1 <- lm(CO2 ~ Model.Year + Real.World.MPG + Weight + Horsepower + Acceleration + Cylinders + Vehicle.Type, data = data)
+summary(model1)
+```
+
+In this first model, it looks like all of the variables with the exception of the Acceleration variable, is statistically significant. This means that our model is highly significant and seems to be a strong fit for the data. Our MPG has a negative coefficient, which means that higher MPG is associated with lower CO2 emissions. Likewise, cars with more cylinders emit more CO2 which contributes to my hypothesis.
+
+Model Year: For each one unit increase in the model year of the car, CO2 emissions decrease by 2.13 units.
+
+MPG: For each one unit increase in MPG, CO2 emissions decrease by 1.09 units.
+
+Weight: For every one unit increase in a car's weight, CO2 emissions increase by 5.28 units.
+
+
+**Testing for Multicollinearity**
+
+```{r}
+vif(model1)
+```
+
+Unfortunately, it looks like most of our variables, with the exception of Vehicle Type shows a high level of multicollinearity. A VIF value of 1 indicates that there is no correlation between the independent variable and the other variables. Furthermore, our GVIF column is our traditional VIF value because the degree of freedom for each predictor is 1, indicating no transformation or interaction terms for these variables. The GVIF column makes it easier to interpret VIF values for predictors with degrees of freedom greater than 1 such as the Vehicle Type variable.
+
+I can see that our VIF values are pretty high since values exceeding 5 or 10 indicates high multicollinearity.
+
+In future analyses, to address multicollinearity, I would consider removing certain variables to address this issue. I think that Principal Component Analysis and Ridge Regression can reduce the influence of highly correlated variables.
+
+**Testing for Outliers**
+
+```{r}
+cooks_distances <- cooks.distance(model1)
+#print(cooks_distances)
+summary(cooks_distances)
+
+plot(cooks_distances, type = "h", ylab = "Cook's Distance", xlab = "Points")
+abline(h = 1, col = "red")
+
+outliers <- which(cooks_distances > 1)
+print(outliers)
+```
+
+After using Cook's Distance, I can see that it prints 456 and 438 using a observation threshold level of 1. I'm using a threshold of 1 which is a common heuristic that indicates that anything above that guideline is influential. These two observations are influential and we need to figure out a way to investigate the points and see how they affect the context of our dataset.
+
+**Prediction**
+
+Let's say I want to predict CO2 emissions for a car with the following characteristics. What can I expect the CO2 value to be?
+
+Model.Year = 2010
+MPG = 2
+Type = Truck.SUV
+Weight = 4855
+Horsepower = 180
+Cylinders = 6
+Acceleration = 8.5
+
+```{r}
+unique1 <- unique(data$Vehicle.Type)
+print(unique1)
+
+new_car <- data.frame(
+  Model.Year = 2010,
+  Real.World.MPG = 20,
+  Vehicle.Type = "Truck SUV",
+  Weight = 4855,
+  Horsepower = 180,
+  Cylinders = 6,
+  Acceleration = 8.5,
+  Type = factor("Truck SUV", levels = c("Truck SUV", "Sedan/Wagon", "Minivan/Van", "Pickup", "Car SUV")))
+  
+
+model1_prediction <- predict(model1, newdata = new_car)
+print(model1_prediction)
+```
+
+My prediction output was 488.1741 after using these specific values in my model. If I was a car manufacturer and I needed to meet specific EPA guidelines in order to produce a car, I could have used this model to determine what CO2 emissions a vehicle would emit before actually building one. I wouldn't want to spend time and resources building a completely new vehicle only for it to not meet EPA guidelines.
+
+Although this sort of predictive insight can be very useful for determining CO2 emissions simply by inputting a few factors, the accuracy/reliability of the model depends on the quality of the data and how well the characteristics are represented in the dataset. If the dataset has any of the issues we previously mentioned such as missing variables or multicollinearity, that could affect the accuracy of the prediction.
+
+**Conclusion**
+
+I completed this project to explore the relationships between car variables and how they impacted CO2 emissions. By combining two of my passions of cars and my love for non-profit work, I was able to work on this analysis which gave me insight on how severely vehicles are negatively impacting our Earth.
+
+I don't believe that analyzing CO2 emissions end with this single dataset. At the time in which this project is worked on, NYC has recently implemented a congestion fee for travelers driving into Manhattan starting June 2023. I would love to see how traffic and usage patterns impact emissions. Traffic congestion probably leads to increased emissions due to idling and stop-start driving. A congestion fee to reduce traffic would probably help reduce CO2 emissions. Another cool dataset I would like to review is environmental data. Broader environmental data such as air quality can help understand the impact of vehicle emissions on public health.
+
+If I were to work on this dataset in the future, I would like to apply more in-depth techniques on how to work around issues that I'm seeing in the dataset. Hopefully by employing more advanced techniques, I can create a more accurate model to predict CO2 emissions.
